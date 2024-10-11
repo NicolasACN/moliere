@@ -178,6 +178,43 @@ async function getTemplateDetails(projectId, template_id) {
     }
 }
 
+// Fonction pour créer un content structure
+async function createContentStructure(projectId, template_id, contentStructure) {
+    const data = {
+        contentStructure: contentStructure
+    };
+
+    try {
+        const response = await axios.post(`${config.api.baseUrl}/api/projects/${projectId}/templates/${template_id}/structure`, 
+            data, {
+            headers: {
+                'Content-Type': 'application/json' 
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
+// Fonction pour recuperer un content structure d'un template
+async function getContentStructure(projectId, template_id) {
+    try {
+        const response = await axios.get(`${config.api.baseUrl}/api/projects/${projectId}/templates/${template_id}/structure`);
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
 
 //////////////////////////////////////
 //                                  //
@@ -323,7 +360,7 @@ app.get('/api/project/:project_id/templates', async (req, res) => {
         
         res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({ error: `Erreur lors de la recupération du template: ${error.message}` });
+        res.status(500).json({ error: `Erreur lors de la recupération des templates: ${error.message}` });
     }
 });
 
@@ -337,7 +374,36 @@ app.get('/api/project/:project_id/templates/:template_id', async (req, res) => {
         
         res.status(200).json(result);
     } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
+        res.status(500).json({ error: `Erreur lors de la récupération des detailles du template: ${error.message}` });
+    }
+});
+
+// Endpoint pour crée un content structure
+app.post('/api/project/:project_id/templates/:template_id/structure', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+    const { contentStructure  } = req.body;
+
+    try {
+        const result = await createContentStructure(project_id, template_id, contentStructure)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la création du content structure: ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer un content structure d'un template
+app.get('/api/project/:project_id/templates/:template_id/structure', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+
+    try {
+        const result = await getContentStructure(project_id, template_id)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la récupération du content structure: ${error.message}` });
     }
 });
 
