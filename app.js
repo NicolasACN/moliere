@@ -126,6 +126,57 @@ async function uploadDataFilesRole(project_id, role) {
     }
 }
 
+// Fonction pour créer un nouveau template
+async function createNewTemplate(projectId, templateName) {
+    const data = {
+        templateName: templateName
+    };
+
+    try {
+        const response = await axios.post(`${config.api.baseUrl}/api/projects/${projectId}/templates`, 
+            data, {
+            headers: {
+                'Content-Type': 'application/json' 
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
+// Fonction pour recuperer tout les templates d'un projet
+async function getAllTemplate(projectId) {
+    try {
+        const response = await axios.get(`${config.api.baseUrl}/api/projects/${projectId}/templates`);
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
+// Fonction pour recuperer les detail d'un templates
+async function getTemplateDetails(projectId, template_id) {
+    try {
+        const response = await axios.get(`${config.api.baseUrl}/api/projects/${projectId}/templates/${template_id}`);
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
 
 
 //////////////////////////////////////
@@ -242,6 +293,47 @@ app.post('/api/project/:project_id/role', async (req, res) => {
     const { role  } = req.body;
     try {
         const result = await uploadDataFilesRole(project_id, role)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
+    }
+});
+
+// Endpoint pour crée les template et les transmettre à l'API Flask
+app.post('/api/project/:project_id/templates', async (req, res) => {
+    const { project_id } = req.params;
+    const { templateName  } = req.body;
+
+    try {
+        const result = await createNewTemplate(project_id, templateName)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la creation du template: ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer tout templates d'un project
+app.get('/api/project/:project_id/templates', async (req, res) => {
+    const { project_id } = req.params;
+
+    try {
+        const result = await getAllTemplate(project_id)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la recupération du template: ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer les details d'un template
+app.get('/api/project/:project_id/templates/:template_id', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+
+    try {
+        const result = await getTemplateDetails(project_id, template_id)
         
         res.status(200).json(result);
     } catch (error) {
