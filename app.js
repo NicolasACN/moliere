@@ -11,6 +11,10 @@ const port = 3000; // Tu peux changer le port si nécessaire
 
 // Middleware pour traiter les données JSON
 app.use(bodyParser.json());
+// Démarrer le serveur
+app.listen(port, () => {
+    console.log(`Serveur Express.js lancé sur le port ${port}`);
+  });
 
 
 //////////////////////////////////////
@@ -216,15 +220,49 @@ async function getContentStructure(projectId, template_id) {
     }
 }
 
+// Fonction pour save des datas
+async function saveData(projectId, template_id, dataObject) {
+    const json = {
+        data: dataObject
+    };
+
+    try {
+        const response = await axios.post(`${config.api.baseUrl}/api/projects/${projectId}/templates/${template_id}/data`, 
+            json, {
+            headers: {
+                'Content-Type': 'application/json' 
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
+// Fonction pour recuperer des datas d'un template
+async function getData(projectId, template_id) {
+    try {
+        const response = await axios.get(`${config.api.baseUrl}/api/projects/${projectId}/templates/${template_id}/data`);
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
 //////////////////////////////////////
 //                                  //
 //            Endpoints             //
 //                                  //
 //////////////////////////////////////
-// Route de test
-app.get('/', (req, res) => {
-  res.send('Hello World from Express.js');
-});
 
 // Endpoint POST pour crée un projet
 app.post('/api/project', async (req, res) => {
@@ -378,6 +416,33 @@ app.get('/api/project/:project_id/templates/:template_id', async (req, res) => {
     }
 });
 
+// Endpoint pour recuperer tout templates d'un project
+app.get('/api/project/:project_id/templates', async (req, res) => {
+    const { project_id } = req.params;
+
+    try {
+        const result = await getAllTemplate(project_id)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la recupération des templates: ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer les details d'un template
+app.get('/api/project/:project_id/templates/:template_id', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+
+    try {
+        const result = await getTemplateDetails(project_id, template_id)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la récupération des detailles du template: ${error.message}` });
+    }
+});
+
 // Endpoint pour crée un content structure
 app.post('/api/project/:project_id/templates/:template_id/structure', async (req, res) => {
     const { project_id } = req.params;
@@ -407,7 +472,31 @@ app.get('/api/project/:project_id/templates/:template_id/structure', async (req,
     }
 });
 
-// Démarrer le serveur
-app.listen(port, () => {
-  console.log(`Serveur Express.js lancé sur le port ${port}`);
+// Endpoint pour save des datas
+app.post('/api/project/:project_id/templates/:template_id/data', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+    const { data } = req.body;
+
+    try {
+        const result = await saveData(project_id, template_id, data)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la sauvegarde des data: ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer des data d'un template
+app.get('/api/project/:project_id/templates/:template_id/data', async (req, res) => {
+    const { project_id } = req.params;
+    const { template_id } = req.params;
+
+    try {
+        const result = await getData(project_id, template_id)
+        
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la récupération des data: ${error.message}` });
+    }
 });
