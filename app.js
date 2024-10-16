@@ -258,6 +258,35 @@ async function getData(projectId, template_id) {
     }
 }
 
+// Function to call the Flask API and generate content
+async function generateContent(projectId, templateId) {
+    try {
+      // Call the Flask API using Axios
+      const response = await axios.post(`${config.api.baseUrl}/api/projects/${projectId}/templates/${templateId}/generate`);
+  
+      // Return the Flask API response
+      return {
+        success: true,
+        message: 'Content generation initiated via Flask API.',
+        data: response.data,
+      };
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        // Handle Flask API returning a 404 error
+        return {
+          success: false,
+          error: 'Project or template not found.',
+        };
+      } else {
+        // Handle general errors
+        return {
+          success: false,
+          error: `Failed to call Flask API: ${error.message}`,
+        };
+      }
+    }
+  }
+
 //////////////////////////////////////
 //                                  //
 //            Endpoints             //
@@ -500,3 +529,19 @@ app.get('/api/project/:project_id/templates/:template_id/data', async (req, res)
         res.status(500).json({ error: `Erreur lors de la récupération des data: ${error.message}` });
     }
 });
+
+// API endpoint to trigger content generation
+app.post('/api/project/:projectId/templates/:templateId/generate', async (req, res) => {
+    const { projectId, templateId } = req.params;
+  
+    // Call the generateContent function
+    const result = await generateContent(projectId, templateId);
+  
+    if (result.success) {
+      // Send the success response back to the client
+      res.status(200).json(result);
+    } else {
+      // Send the error response back to the client
+      res.status(500).json(result);
+    }
+  });
