@@ -4,6 +4,7 @@ const axios = require('axios'); // Pour faire les appels API vers l'application 
 const multer = require('multer'); // Permet de travailler avec des fichiers
 const FormData = require('form-data');
 const config = require('./config.json');
+const cors = require('cors');
 
 const app = express();
 const upload = multer();  // Utilise multer pour gérer les fichiers
@@ -15,6 +16,8 @@ app.use(bodyParser.json());
 app.listen(port, () => {
     console.log(`Serveur Express.js lancé sur le port ${port}`);
   });
+
+app.use(cors());
 
 
 //////////////////////////////////////
