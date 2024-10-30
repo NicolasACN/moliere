@@ -82,60 +82,6 @@ async function getProjectDetails(project_id) {
     }
 }
 
-// Fonction pour envoyer les data file à l'API Flask
-async function uploadDataFiles(project_id, files, endpoint) {
-    try {
-        const form = new FormData();
-
-        // Ajouter chaque fichier dans le form-data
-        files.forEach(file => {
-            form.append('files', file.buffer, file.originalname);  // Ajouter les fichiers avec leur nom original
-        });
-
-        const response = await axios.post(
-            `${config.api.baseUrl}/api/project/${project_id}/${endpoint}`,
-            form,
-            {
-                headers: {
-                    ...form.getHeaders() // Ajoute les headers form-data
-                }
-            }
-        );
-        return response.data;
-    } catch (error) {
-        if (error.response) {
-            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
-        } else {
-            throw new Error(`Erreur Axios : ${error.message}`);
-        }
-    }
-}
-
-// Fonction pour envoyer les data role à l'API Flask
-async function uploadDataFilesRole(project_id, role) {
-    const jsonData = {
-        role: role
-    };
-    try {
-        const response = await axios.post(
-            `${config.api.baseUrl}/api/project/${project_id}/role`,
-            jsonData,
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
-        return response.data;
-    } catch (error) {
-        if (error.response) {
-            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
-        } else {
-            throw new Error(`Erreur Axios : ${error.message}`);
-        }
-    }
-}
-
 // Fonction pour créer un nouveau template
 async function createNewTemplate(projectId, templateName) {
     const data = {
@@ -350,83 +296,21 @@ async function digestContent(projectName, label, urls, files, projectSource) {
 }
 
 // Fonction pour mettre à jour un projet et vérifier les modifications
-async function updateProject(projectName, modifiedFields) {
-    const result = {};
-
+async function updateProject(projectName, label, value) {
     try {
-        // Si le champ 'brand_knowledge' est modifié
-        if (modifiedFields.brand_knowledge) {
-            console.log(`Le champ 'brand_knowledge' est présent et sera mis à jour pour le projet ${projectName}`);
-
-            // Appel à l'API Flask pour mettre à jour brand knowledge
-            const brandKnowledgeResponse = await updateBrandKnowledgeInFlask(projectName, modifiedFields.brand_knowledge);
-            result.brandKnowledgeUpdate = brandKnowledgeResponse;
-        }
-
-        // Si le champ 'role' est modifié
-        if (modifiedFields.role) {
-            console.log(`Le champ 'role' est présent et sera mis à jour pour le projet ${projectName}`);
-
-            // Appel à l'API Flask pour mettre à jour role
-            result.roleUpdate = uploadDataFilesRole(projectName, modifiedFields.role)
-        }
-
-        // Si le champ 'project_brief' est modifié
-        if (modifiedFields.project_brief) {
-            console.log(`Le champ 'project_brief' est présent et sera mis à jour pour le projet ${projectName}`);
-
-            // Appel à l'API Flask pour mettre à jour project_brief
-            result.roleUpdate = uploadDataFilesRole(projectName, modifiedFields.project_brief)
-        }
-
-        // Si le champ 'copywriting_guidelines' est modifié
-        if (modifiedFields.copywriting_guidelines) {
-            console.log(`Le champ 'copywriting_guidelines' est présent et sera mis à jour pour le projet ${projectName}`);
-
-            // Appel à l'API Flask pour mettre à jour copywriting guidelines
-            const copywritingGuidelinesResponse = await updateCopywritingGuidelinesInFlask(projectName, modifiedFields.copywriting_guidelines);
-            result.copywritingGuidelinesUpdate = copywritingGuidelinesResponse;
-        }
-
-        // Si d'autres champs sont modifiés, vous pouvez ajouter ici d'autres appels API ou logiques
-        return result;
-    } catch (error) {
-        throw new Error(`Erreur lors de la mise à jour : ${error.message}`);
-    }
-}
-
-// Fonction pour envoyer les données de brand_knowledge à l'API Flask
-async function updateBrandKnowledgeInFlask(projectName, brandKnowledge) {
-    try {
-        const response = await axios.post(`${config.api.baseUrl}/api/project/${projectName}/brand-knowledge`, {
-            brand_knowledge: brandKnowledge
+        const response = await axios.post(`${config.api.baseUrl}/api/project/${projectName}/${label}/update`, {
+            data: value
         });
         return response.data;
+
     } catch (error) {
         if (error.response) {
-            throw new Error(`Erreur API Flask lors de la mise à jour de brand knowledge : ${error.response.data.error}`);
+            throw new Error(`Erreur API Flask lors de la mise à jour de ${label} : ${error.response.data.error}`);
         } else {
-            throw new Error(`Erreur Axios lors de la mise à jour de brand knowledge : ${error.message}`);
+            throw new Error(`Erreur Axios lors de la mise à jour de ${label} : ${error.message}`);
         }
     }
 }
-
-// Fonction pour envoyer les données de copywriting_guidelines à l'API Flask
-async function updateCopywritingGuidelinesInFlask(projectName, copywritingGuidelines) {
-    try {
-        const response = await axios.post(`${config.api.baseUrl}/api/project/${projectName}/copywriting-guidelines`, {
-            copywritingGuidelines: copywritingGuidelines
-        });
-        return response.data;
-    } catch (error) {
-        if (error.response) {
-            throw new Error(`Erreur API Flask lors de la mise à jour de copywriting guidelines : ${error.response.data.error}`);
-        } else {
-            throw new Error(`Erreur Axios lors de la mise à jour de copywriting guidelines : ${error.message}`);
-        }
-    }
-}
-
 
 
 //////////////////////////////////////
@@ -476,73 +360,6 @@ app.get('/api/project/:project_id', async (req, res) => {
         res.status(200).json(projectDetails);
     } catch (error) {
         res.status(500).json({ error: error.message });
-    }
-});
-
-// Endpoint pour recevoir les fichiers brand-knowledge et les transmettre à l'API Flask
-app.post('/api/project/:project_id/brand-knowledge', upload.array('files'), async (req, res) => {
-    const files = req.files;
-    const { project_id } = req.params;
-
-    if (!files || files.length === 0) {
-        return res.status(400).json({ error: "Aucun fichier n'a été envoyé" });
-    }
-
-    try {
-        const result = await uploadDataFiles(project_id, files, "brand-knowledge")
-
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
-    }
-});
-
-// Endpoint pour recevoir les fichiers copywriting-guidelines et les transmettre à l'API Flask
-app.post('/api/project/:project_id/copywriting-guidelines', upload.array('files'), async (req, res) => {
-    const files = req.files;
-    const { project_id } = req.params;
-
-    if (!files || files.length === 0) {
-        return res.status(400).json({ error: "Aucun fichier n'a été envoyé" });
-    }
-
-    try {
-        const result = await uploadDataFiles(project_id, files, "copywriting-guidelines")
-
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
-    }
-});
-
-// Endpoint pour recevoir les fichiers reference-examples et les transmettre à l'API Flask
-app.post('/api/project/:project_id/reference-examples', upload.array('files'), async (req, res) => {
-    const files = req.files;
-    const { project_id } = req.params;
-
-    if (!files || files.length === 0) {
-        return res.status(400).json({ error: "Aucun fichier n'a été envoyé" });
-    }
-
-    try {
-        const result = await uploadDataFiles(project_id, files, "reference-examples")
-
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
-    }
-});
-
-// Endpoint pour recevoir les role et les transmettre à l'API Flask
-app.post('/api/project/:project_id/role', async (req, res) => {
-    const { project_id } = req.params;
-    const { role } = req.body;
-    try {
-        const result = await uploadDataFilesRole(project_id, role)
-
-        res.status(200).json(result);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'upload des fichiers: ${error.message}` });
     }
 });
 
@@ -706,61 +523,15 @@ app.post('/api/project/:projectName/:label/digest-content', upload.array('files'
 });
 
 // Endpoint POST pour mettre à jour les champs modifiés d'un projet
-app.post('/api/project/:projectName/update', async (req, res) => {
-    const { projectName } = req.params; // Récupère le nom du projet depuis les paramètres d'URL
-    const modifiedFields = req.body; // Les champs modifiés envoyés par le frontend
-
+app.post('/api/project/:projectName/:label/update', async (req, res) => {
+    const { projectName, label } = req.params; // Récupère le nom du projet depuis les paramètres d'URL
+    const value = req.body;
     try {
         // Appel de la fonction pour mettre à jour le projet avec les champs modifiés
-        const result = await updateProject(projectName, modifiedFields);
+        const result = await updateProject(projectName, label, value);
         res.status(200).json(result); // Retourne une réponse JSON avec les données mises à jour
     } catch (error) {
         res.status(500).json({ error: `Erreur lors de la mise à jour du projet : ${error.message}` });
-    }
-});
-
-
-// Endpoint pour recevoir le contenu de brand-knowledge en tant que chaîne de caractères
-app.post('/api/project/:project_id/brand-knowledge', async (req, res) => {
-    const { project_id } = req.params;
-    const { brandKnowledge } = req.body; // Récupère le contenu de brand-knowledge
-
-    // Vérifier si brandKnowledge est présent
-    if (!brandKnowledge) {
-        return res.status(400).json({ error: "Le champ 'brandKnowledge' est obligatoire." });
-    }
-
-    try {
-        // Appel à l'API Flask pour sauvegarder le brand-knowledge
-        const response = await axios.post(`${config.api.baseUrl}/api/project/${project_id}/brand-knowledge`, {
-            brand_knowledge: brandKnowledge
-        });
-
-        res.status(200).json(response.data);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'envoi du contenu de brand-knowledge : ${error.message}` });
-    }
-});
-
-// Endpoint pour recevoir le contenu de copywriting-guidelines en tant que chaîne de caractères
-app.post('/api/project/:project_id/copywriting-guidelines', async (req, res) => {
-    const { project_id } = req.params;
-    const { copywritingGuidelines } = req.body; // Récupère le contenu de copywriting-guidelines
-
-    // Vérifier si copywritingGuidelines est présent
-    if (!copywritingGuidelines) {
-        return res.status(400).json({ error: "Le champ 'copywritingGuidelines' est obligatoire." });
-    }
-
-    try {
-        // Appel à l'API Flask pour sauvegarder le copywriting-guidelines
-        const response = await axios.post(`${config.api.baseUrl}/api/project/${project_id}/copywriting-guidelines`, {
-            copywritingGuidelines: copywritingGuidelines
-        });
-
-        res.status(200).json(response.data);
-    } catch (error) {
-        res.status(500).json({ error: `Erreur lors de l'envoi du contenu de copywriting-guidelines : ${error.message}` });
     }
 });
 
