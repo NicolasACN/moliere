@@ -312,6 +312,22 @@ async function updateProject(projectName, label, value) {
     }
 }
 
+// Fonction pour recuperer le contenu généré
+async function getContent(projectId, template_id) {
+    try {
+        const response = await axios.get(`${config.api.baseUrl}/api/projects/${projectId}/content`, {
+            params: { template_id }
+        });
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
 
 //////////////////////////////////////
 //                                  //
@@ -532,6 +548,19 @@ app.post('/api/project/:projectName/:label/update', async (req, res) => {
         res.status(200).json(result); // Retourne une réponse JSON avec les données mises à jour
     } catch (error) {
         res.status(500).json({ error: `Erreur lors de la mise à jour du projet : ${error.message}` });
+    }
+});
+
+// Endpoint pour recuperer le contenu généré 
+app.get('/api/project/:project_id/content', async (req, res) => {
+    const { project_id } = req.params;
+    const template_id = req.body;
+    try {
+        const result = await getContent(project_id, template_id)
+
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de la récupération de contenu: ${error.message}` });
     }
 });
 
