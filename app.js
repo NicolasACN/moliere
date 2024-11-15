@@ -106,6 +106,31 @@ async function createNewTemplate(projectId, templateName) {
     }
 }
 
+// Fonction pour importer les templates
+async function importTemplates(src_project, dest_project) {
+    const data = {
+        src_project: src_project,
+        dest_project: dest_project
+    };
+
+    try {
+        const response = await axios.post(`${config.api.baseUrl}/api/project/importTemplates`,
+            data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`Erreur API Flask : ${error.response.data.error}`);
+        } else {
+            throw new Error(`Erreur Axios : ${error.message}`);
+        }
+    }
+}
+
 // Fonction pour recuperer tout les templates d'un projet
 async function getAllTemplate(projectId) {
     try {
@@ -390,6 +415,20 @@ app.post('/api/project/:project_id/templates', async (req, res) => {
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: `Erreur lors de la creation du template: ${error.message}` });
+    }
+});
+
+// Endpoint pour importer les templates et les transmettre à l'API Flask
+app.post('/api/project/importTemplates', async (req, res) => {
+    const { src_project } = req.body;
+    const { dest_project } = req.body;
+
+    try {
+        const result = await importTemplates(src_project, dest_project)
+
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: `Erreur lors de l'importation des templates: ${error.message}` });
     }
 });
 
